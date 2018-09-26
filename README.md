@@ -2,10 +2,10 @@
 Flatiron School Final Project
 
 
-#Goal
+# Goal
 Explore NBA shot data using Python and Machine Learning to determine who the best shooters in the NBA are and see if I can accurately predict shot outcomes
 
-#Process
+# Process
  - ETL
     - Sourced data from nba.com, basketball-reference.com, and nbasavant.com
     - Feature engineering to add more context to each shot
