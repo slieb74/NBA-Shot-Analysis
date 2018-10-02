@@ -1,19 +1,31 @@
-import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import seaborn as sns
-import itertools, math, time, re, pickle
+############################### IMPORTS ###############################
+if True:
+    import pandas as pd
+    import numpy as np
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import itertools, math, time, re, pickle
 
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, StratifiedKFold, ShuffleSplit
-from sklearn.ensemble import GradientBoostingClassifier, AdaBoostClassifier, RandomForestClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, auc, confusion_matrix, precision_score, recall_score, roc_curve, f1_score
-from sklearn.preprocessing import MinMaxScaler
+    import warnings
+    warnings.filterwarnings('ignore')
 
-from xgboost import XGBClassifier
+    import plotly
+    import plotly.plotly as py
+    import plotly.graph_objs as go
+    plotly.offline.init_notebook_mode(connected=True)
 
-#####LOAD DATA#####
+    from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, StratifiedKFold, ShuffleSplit
+    from sklearn.ensemble import GradientBoostingClassifier, AdaBoostClassifier, RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score, auc, confusion_matrix, precision_score, recall_score, roc_curve, f1_score
+    from sklearn.preprocessing import MinMaxScaler
+
+    from xgboost import XGBClassifier
+
+    from pactools.grid_search import GridSearchCVProgressBar
+
+############################## LOAD DATA ##############################
 if False:
     df = pd.read_csv('data/final_df.csv', index_col=0)
 
@@ -30,7 +42,7 @@ if False:
 
     np.save('./X_y_arrays/X_shallow', X)
     np.save('./X_y_arrays/y_shallow', y)
-#####SPLIT DATA INTO TRAIN/TEST SETS#####
+################### SPLIT DATA INTO TRAIN/TEST SETS ###################
 if True:
     with open ('./X_y_arrays/X_column_names', 'rb') as fp:
         X_col_names = pickle.load(fp)
@@ -40,6 +52,7 @@ if True:
 
     X_train, X_test, y_train, y_test = train_test_split(X,y,random_state=23,test_size=.2)
 
+########################## HELPER FUNCTIONS ##########################
 def build_model(model, path, X_train, X_test, y_train, y_test, decision_function=True):
     start = time.time()
 
@@ -141,8 +154,58 @@ def plot_roc_curve(fpr, tpr, path):
     #Save output
     plt.savefig('./models/'+ path + '/roc_curves/' + time.asctime().replace(' ', '_') + '.png', bbox_inches='tight', dpi=480)
     plt.show()
+######################################################################
 
-######################## LOGISTIC REGRESSION ########################
+############################# GRID SEARCH ############################
+def run_grid_search(model, path, param_grid, X, y, cv=3):
+    start = time.time()
+
+    search = GridSearchCVProgressBar(model, param_grid, scoring='roc_auc', cv=cv, n_jobs=-1, verbose=2)
+    search.fit(X,y)
+
+    print("Total Runtime for Grid Search: {:.4} seconds".format(round(time.time() - start, 2)))
+
+    best_score = search.best_score_
+    best_params = search.best_params_
+
+    print("Testing Accuracy: {:.4}%".format(best_score * 100))
+    print("\nOptimal Parameters: {}".format(best_params))
+
+    search_results = pd.DataFrame.from_dict(search.cv_results_)
+
+    search_results.to_csv('./grid_search_results/'+ path + '_' + str(round(best_score,4)).replace('.','') + '_' + time.asctime().replace(' ', '_'))
+
+    return search_results, best_score, best_params
+######################################################################
+
+########################## PARAMETER GRIDS ###########################
+if True:
+
+    rf_param_grid = {'n_estimators':[100,250],
+                    'criterion':['gini', 'entropy'],
+                    'min_samples_leaf':[2,5,10],
+                    'min_samples_split':[2,5,10],
+                    'n_jobs':[-1]
+                    }
+
+    gb_param_grid = {'n_estimators':[50, 100, 250],
+                    'learning_rate':[.01, .05, .1, 1],
+                    'min_samples_leaf':[2, 5, 10],
+                    'min_samples_split':[2, 5, 10],
+                    'max_depth':[2, 5, 10]
+                    }
+
+    xgb_param_grid = {'learning_rate':[.01, .05, .1, 1],
+                     'n_estimators':[100, 250],
+                     'max_depth':[2, 5, 10],
+                     'min_child_weight': [1, 5, 10],
+                     'gamma': [0.5, 1, 2],
+                     }
+
+######################################################################
+
+
+######################## LOGISTIC REGRESSION #########################
 if False:
     log_reg, log_y_preds, log_y_score, log_fpr, log_tpr = build_model(LogisticRegression(C=1, class_weight='balanced'),
     'logreg', X_train, X_test, y_train, y_test)
@@ -154,12 +217,20 @@ if False:
 
 ###################### RANDOM FOREST CLASSIFIER ######################
 if False:
-    rf, rf_y_preds, rf_y_score, rf_fpr, rf_tpr = build_model(RandomForestClassifier(n_estimators=500, criterion='gini',  max_features='sqrt', min_samples_leaf=10, min_samples_split=10, verbose=1, class_weight=None, n_jobs=-1, random_state=23),
+    rf, rf_y_preds, rf_y_score, rf_fpr, rf_tpr = build_model(RandomForestClassifier(n_estimators=500, criterion='gini',  max_features='sqrt', min_samples_leaf=10, min_samples_split=2, verbose=1, class_weight='balanced', n_jobs=-1, random_state=23),
     'rf', X_train, X_test, y_train, y_test, decision_function=False)
 
     print_model_metrics(rf_y_preds, rf_y_score, 'rf')
     plot_roc_curve(rf_fpr, rf_tpr, 'rf')
     plot_feature_importances(rf, 'rf')
+
+    # rf_search_results, rf_best_score, rf_best_params = run_grid_search(RandomForestClassifier(random_state=23),'rf', rf_param_grid, X, y, cv=3)
+
+    # [ParallelProgressBar(n_jobs=-1)]: Done 108 out of 108 | elapsed: 67.1min finished
+    # Total Runtime for Grid Search: 4.095e+03 seconds
+    # Testing Accuracy: 70.82%
+    #
+    # Optimal Parameters: {'criterion': 'gini', 'min_samples_leaf': 10, 'min_samples_split': 2, 'n_estimators': 250, 'n_jobs': -1}
 ######################################################################
 
 
@@ -187,10 +258,51 @@ if False:
 
 ######################### XGBOOST CLASSIFIER #########################
 if False:
-    xgb, xgb_y_preds, xgb_y_score, xgb_fpr, xgb_tpr = build_model(XGBClassifier(learning_rate=0.1, n_estimators=250, max_depth=10, min_child_weight=1, gamma=0, algorithm='SAMME.R', objective='binary:logistic', reg_alpha=0, reg_lambda=1, n_jobs=-1, random_state=23),
+    xgb, xgb_y_preds, xgb_y_score, xgb_fpr, xgb_tpr = build_model(XGBClassifier(learning_rate=0.1, n_estimators=500, max_depth=5, min_child_weight=1, gamma=1, algorithm='SAMME.R', objective='binary:logistic', reg_alpha=0, reg_lambda=0, n_jobs=-1, random_state=23),
     'xgb', X_train, X_test, y_train, y_test, decision_function=False)
 
     print_model_metrics(xgb_y_preds, xgb_y_score, 'xgb')
     plot_roc_curve(xgb_fpr, xgb_tpr, 'xgb')
     plot_feature_importances(xgb, 'xgb')
+
+    # xgb_search_results, xgb_best_score, xgb_best_params = run_grid_search(XGBClassifier(random_state=23),'xgb', xgb_param_grid, X_train, y_train)
+
+    # Testing Accuracy: 72.23%
+    #
+    # Optimal Parameters: {'gamma': 1, 'learning_rate': 0.1, 'max_depth': 5, 'min_child_weight': 1, 'n_estimators': 250}
+
+######################################################################
+
+
+######################## STACKED ENSEMBLE MODEL ######################
+def create_ensemble_model(X,y):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=23, test_size=.2)
+
+    rf = RandomForestClassifier(n_estimators=500, criterion='gini',  max_features='sqrt', min_samples_leaf=10, min_samples_split=2, verbose=1, class_weight='balanced', n_jobs=-1, random_state=23)
+
+    xgb = XGBClassifier(learning_rate=0.1, n_estimators=250, max_depth=5, min_child_weight=1, gamma=1, algorithm='SAMME.R', objective='binary:logistic', n_jobs=-1, random_state=23)
+
+    ada = AdaBoostClassifier(learning_rate=.75, n_estimators=500, algorithm='SAMME.R', random_state=23)
+
+    rf.fit(X_train, y_train)
+    rf_train_preds = pd.DataFrame(rf.predict_proba(X_train))
+    rf_test_preds = pd.DataFrame(rf.predict_proba(X_test))
+
+    xgb.fit(X_train, y_train)
+    xgb_train_preds = pd.DataFrame(xgb.predict_proba(X_train))
+    xgb_test_preds = pd.DataFrame(xgb.predict_proba(X_test))
+
+    ada.fit(X_train, y_train)
+    ada_train_preds = pd.DataFrame(ada.predict_proba(X_train))
+    ada_test_preds = pd.DataFrame(ada.predict_proba(X_test))
+
+    train_df = pd.concat([rf_train_preds, xgb_train_preds, ada_train_preds], names=['rf','xgb','ada'], axis=1)
+    test_df = pd.concat([rf_test_preds, xgb_test_preds, ada_test_preds], names=['rf','xgb','ada'], axis=1)
+
+    model = LogisticRegression(random_state=1)
+    model.fit(train_df,y_train)
+    y_preds = model.predict(test_df)
+    # y_score = model.score(y_preds, y_test)
+
+    return train_df, test_df, y_preds
 ######################################################################
