@@ -42,6 +42,26 @@ if False:
 
     np.save('./X_y_arrays/X_shallow', X)
     np.save('./X_y_arrays/y_shallow', y)
+
+#new data
+if True:
+    df = pd.read_csv('final_df_1415.csv', index_col=0)
+    df[['zone_id', 'period']] = df[['zone_id', 'period']].astype('category')
+
+    X = df.drop(columns=['name', 'team_name', 'game_date', 'season', 'team_id','minutes_remaining', 'seconds_remaining', 'shot_made_flag', 'shot_type', 'opponent', 'x', 'y', 'defender_name', 'opp_id', 'game_id', 'game_event_id',
+    'player_id', 'shot_zone_basic', 'shot_zone_area', 'shot_zone_range', 'htm', 'vtm', 'pos', 'age', 'defender_id', 'zone', 'pps', 'zone_id', 'zone_minus_lg_avg', 'lg_zone_avg',
+    'is_home', 'prev_shot_made', 'prev_2_made', 'prev_3_made', 'dribbles', 'period', 'action_type', 'ts%', 'dbpm', '3par', 'usg%', 'blk_pct', 'def_rating'])
+    y = np.array(df.shot_made_flag)
+
+    X_col_names = X.columns
+    with open('./X_y_arrays/X_column_names', 'wb') as x_col:
+        pickle.dump(X_col_names, x_col)
+
+    minmax_scale = MinMaxScaler()
+    X = minmax_scale.fit_transform(X)
+
+    np.save('./X_y_arrays/X_shallow', X)
+    np.save('./X_y_arrays/y_shallow', y)
 ################### SPLIT DATA INTO TRAIN/TEST SETS ###################
 if True:
     with open ('./X_y_arrays/X_column_names', 'rb') as fp:
@@ -83,7 +103,7 @@ def plot_feature_importances(model, path):
     plt.xlabel("Feature importance")
     plt.ylabel("Features")
     #Save output
-    plt.savefig('./models/'+ path + '/feature_importances/' + time.asctime().replace(' ', '_') + '.png', dpi=480)
+    plt.savefig('./models/'+ path + '/feature_importances/' + time.asctime().replace(' ', '_') + '.png')
     plt.show()
 
 def plot_confusion_matrix(cm, path, title='Confusion matrix', cmap=plt.cm.Blues):
@@ -95,7 +115,7 @@ def plot_confusion_matrix(cm, path, title='Confusion matrix', cmap=plt.cm.Blues)
     plt.xlabel('Predicted')
     plt.ylabel('Actual')
     #Add appropriate Axis Scales
-    class_names = ['Miss','Make']
+    class_names = set(y)
     tick_marks = np.arange(len(class_names))
     plt.xticks(tick_marks, class_names)
     plt.yticks(tick_marks, class_names)
@@ -180,6 +200,9 @@ def run_grid_search(model, path, param_grid, X, y, cv=3):
 
 ########################## PARAMETER GRIDS ###########################
 if True:
+    log_reg_param_grid = {'penalty':['l1','l2'],
+                        'C': np.logspace(0, 4, 10)
+                    }
 
     rf_param_grid = {'n_estimators':[100,250],
                     'criterion':['gini', 'entropy'],
@@ -206,18 +229,20 @@ if True:
 
 
 ######################## LOGISTIC REGRESSION #########################
-if False:
-    log_reg, log_y_preds, log_y_score, log_fpr, log_tpr = build_model(LogisticRegression(C=1, class_weight='balanced'),
-    'logreg', X_train, X_test, y_train, y_test)
+if True:
+    # log_reg, log_y_preds, log_y_score, log_fpr, log_tpr = build_model(LogisticRegression(C=1, class_weight='balanced'),
+    # 'logreg', X_train, X_test, y_train, y_test)
+    #
+    # print_model_metrics(log_y_preds, log_y_score, 'logreg')
+    # plot_roc_curve(log_fpr, log_tpr, 'logreg')
 
-    print_model_metrics(log_y_preds, log_y_score, 'logreg')
-    plot_roc_curve(log_fpr, log_tpr, 'logreg')
+    log_reg_search_results, log_reg_best_score, log_reg_best_params = run_grid_search(LogisticRegression(random_state=23),'logreg', log_reg_param_grid, X, y, cv=10)
 ######################################################################
 
 
 ###################### RANDOM FOREST CLASSIFIER ######################
 if False:
-    rf, rf_y_preds, rf_y_score, rf_fpr, rf_tpr = build_model(RandomForestClassifier(n_estimators=500, criterion='gini',  max_features='sqrt', min_samples_leaf=10, min_samples_split=2, verbose=1, class_weight='balanced', n_jobs=-1, random_state=23),
+    rf, rf_y_preds, rf_y_score, rf_fpr, rf_tpr = build_model(RandomForestClassifier(n_estimators=500, criterion='gini', min_samples_leaf=10, min_samples_split=10, verbose=.5, class_weight='balanced', n_jobs=-1, random_state=23),
     'rf', X_train, X_test, y_train, y_test, decision_function=False)
 
     print_model_metrics(rf_y_preds, rf_y_score, 'rf')
@@ -236,7 +261,7 @@ if False:
 
 #################### GRADIENT BOOSTING CLASSIFIER ####################
 if False:
-    gb, gb_y_preds, gb_y_score, gb_fpr, gb_tpr = build_model(GradientBoostingClassifier(learning_rate=0.1, n_estimators=250, max_depth=5, min_samples_leaf=5, min_samples_split=5, verbose=1, random_state=23),
+    gb, gb_y_preds, gb_y_score, gb_fpr, gb_tpr = build_model(GradientBoostingClassifier(learning_rate=0.05, n_estimators=500, max_depth=5, min_samples_leaf=7, min_samples_split=7, verbose=1, random_state=23),
     'gb', X_train, X_test, y_train, y_test)
 
     print_model_metrics(gb_y_preds, gb_y_score, 'gb')
@@ -247,7 +272,7 @@ if False:
 
 ######################### ADABOOST CLASSIFIER #########################
 if False:
-    ada, ada_y_preds, ada_y_score, ada_fpr, ada_tpr = build_model(AdaBoostClassifier(learning_rate=1, n_estimators=500, algorithm='SAMME.R', random_state=23),
+    ada, ada_y_preds, ada_y_score, ada_fpr, ada_tpr = build_model(AdaBoostClassifier(learning_rate=.01, n_estimators=500, algorithm='SAMME.R', random_state=23),
     'ada', X_train, X_test, y_train, y_test)
 
     print_model_metrics(ada_y_preds, ada_y_score, 'ada')
@@ -270,7 +295,6 @@ if False:
     # Testing Accuracy: 72.23%
     #
     # Optimal Parameters: {'gamma': 1, 'learning_rate': 0.1, 'max_depth': 5, 'min_child_weight': 1, 'n_estimators': 250}
-
 ######################################################################
 
 
