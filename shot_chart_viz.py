@@ -1,26 +1,28 @@
-import requests, time, itertools, math, shutil, matplotlib
-import pandas as pd
-import matplotlib.pyplot as plt
-# %matplotlib inline
-import seaborn as sns
-import numpy as np
+############################### IMPORTS ###############################
+if True:
+    import requests, time, itertools, math, shutil, matplotlib
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    # %matplotlib inline
+    import seaborn as sns
+    import numpy as np
 
-from court import court_shapes
+    from court import court_shapes
 
-pd.set_option('display.max_columns',40)
-import warnings
-warnings.filterwarnings('ignore')
+    pd.set_option('display.max_columns',40)
+    import warnings
+    warnings.filterwarnings('ignore')
 
-import ipywidgets as widgets
-from ipywidgets import interact
+    import ipywidgets as widgets
+    from ipywidgets import interact
 
-import plotly
-import plotly.plotly as py
-import plotly.graph_objs as go
-plotly.offline.init_notebook_mode(connected=True)
+    import plotly
+    import plotly.plotly as py
+    import plotly.graph_objs as go
+    plotly.offline.init_notebook_mode(connected=True)
 
 #####READ DATAFRAME#####
-df = pd.read_csv('data/sorted_df_14_15.csv',index_col=0)
+df = pd.read_csv('final_df_1415.csv',index_col=0)
 
 #####DRAW PLAYER SHOT CHART (PLOTLY)#####
 def draw_shot_chart(name):
@@ -185,10 +187,10 @@ def acquire_playerPic(player_id, zoom, offset=(-165,400)):
     url = "http://stats.nba.com/media/players/230x185/"+ ID +".png"
     pic = requests.get(url,stream=True)
 
-    with open(ID + '.png', 'wb') as out_file:
+    with open('scraped_images/player_images/' + ID + '.png', 'wb') as out_file:
         shutil.copyfileobj(pic.raw, out_file)
 
-    player_pic = plt.imread(ID + '.png')
+    player_pic = plt.imread('scraped_images/player_images/' + ID + '.png')
     img = osb.OffsetImage(player_pic, zoom)
     img = osb.AnnotationBbox(img, offset,xycoords='data',pad=0.0, box_alignment=(1,0), frameon=False)
 
@@ -219,7 +221,6 @@ cdict = {
 mymap = matplotlib.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
 mymap = mymap.from_list('Color Map',[(0,'#ff0000'),(.45,'#ffff00'),(1,'#00ff00')])
 
-
 ####################CALCULATE SEASON STATS TO ADD TO CHART####################
 def get_season_stats(player_name):
     player = df[df.name==player_name]
@@ -234,11 +235,10 @@ def get_season_stats(player_name):
     threes = player.groupby(['shot_type']).sum().iloc[1].shot_made_flag * 1.5
     stats['EFFECTIVE_FG_PCT'] = (twos+threes)/player.shape[0]
 
+    stats['POINTS_PER_SHOT'] = round(player.pps.mean(),3)
     stats['AVG_SHOT_DISTANCE'] = round(player.shot_distance.mean())
-    stats['MOST_FGM'] = player.groupby('game_date').sum().shot_made_flag.max()
-    stats['MOST_THREES_MADE'] = player[player.shot_type==3].groupby(by=['game_date']).sum().shot_made_flag.max()
 
-    printout = """Games: {}\nFG: {:4.1%}\n3PT: {:4.1%}\nEFG: {:4.1%}\nAvg Shot Distance: {} ft.\nGame High: FGM - {}, 3PM - {}""".format(*[stats.get(k) for k in stats.keys()])
+    printout = """Games: {}\nFG: {:4.1%}\n3PT: {:4.1%}\nEFG: {:4.1%}\nPoints per Shot: {}\nAvg Shot Dist.: {} ft.""".format(*[stats.get(k) for k in stats.keys()])
 
     return stats, printout
 
@@ -254,9 +254,10 @@ def get_team_stats(team):
     threes = team_df.groupby(['shot_type']).sum().iloc[1].shot_made_flag * 1.5
     stats['EFFECTIVE_FG_PCT'] = (twos+threes)/team_df.shape[0]
 
+    stats['POINTS_PER_SHOT'] = round(team_df.pps.mean(),3)
     stats['AVG_SHOT_DISTANCE'] = round(team_df.shot_distance.mean())
 
-    printout = """FG: {:4.1%}\n3PT: {:4.1%}\nEFG: {:4.1%}\nAvg Shot Distance: {} ft.""".format(*[stats.get(k) for k in stats.keys()])
+    printout = """FG: {:4.1%}\n3PT: {:4.1%}\nEFG: {:4.1%}\nPoints per Shot: {}\nAvg Shot Dist.: {} ft.""".format(*[stats.get(k) for k in stats.keys()])
 
     return stats, printout
 
@@ -307,7 +308,7 @@ def freq_shooting_plot(player_name,gridNum=25):
 
 #################PLOT TEAM FREQUENCY SHOT CHART (MATPLOTLIB)#################
 def team_freq_plot(team, gridNum=25):
-    plot_size=(8,8)
+    plot_size=(12,8)
     team_df = df[df.team_name==team]
 
     from matplotlib.patches import Circle
@@ -347,4 +348,3 @@ def team_freq_plot(team, gridNum=25):
     #plot season stats
     ax.text(150,395,get_team_stats(team)[1])
     plt.show()
-    return ax
