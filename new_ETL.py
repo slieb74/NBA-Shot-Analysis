@@ -25,12 +25,15 @@ def load_data_to_df():
     df.game_date = pd.to_datetime(df.game_date)
     df = df.reset_index(drop=True)
     return df
-
 df = load_data_to_df()
 ######################################################################
 
 ###########################--BASIC CLEANING--#########################
 df.shot_type = np.where(df.shot_type=='2PT Field Goal', 2, 3)
+df.period[df.period>5]=5
+df['pps'] = df.shot_type*df.shot_made_flag
+df.touch_time[df.touch_time<0]=0
+df.touch_time[df.touch_time>24]=24
 
 def create_team_ids(df):
     team_id_dict = {}
@@ -252,8 +255,32 @@ def clean_shot_zones(df):
     #change shots misclassified as above_break_3 to backcourt
     df.shot_zone_basic[(df.shot_zone_area=='Back Court(BC)') &  (df.shot_zone_basic=='Above the Break 3')] = 'Backcourt'
 clean_shot_zones(sorted_df)
+
+def reduce_action_types(df):
+    df.action_type=df.action_type.str.lower()
+    new_action_types=[]
+    for i, row in df.action_type.iteritems():
+        if 'dunk' in row:
+            new_action_types.append('dunk')
+        elif 'layup' in row:
+            new_action_types.append('layup')
+        elif ('driving') in row or ('running') in row:
+            new_action_types.append('driving_running')
+        elif 'pullup' in row:
+            new_action_types.append('pullup')
+        elif ('fadeaway') in row or ('turnaround') in row or 'step back' in row:
+            new_action_types.append('fade_turn_step')
+        elif 'hook' in row:
+            new_action_types.append('hook_shot')
+        elif 'jump' in row:
+            new_action_types.append('jump_shot')
+        else:
+            new_action_types.append(row)
+    return new_action_types
+sorted_df.action_type = reduce_action_types(sorted_df)
 ######################################################################
 
+sorted_df.to_csv('data/mid_etl_checkpoint_df.csv')
 
 ########################--GET FG % FOR EACH ZONE--####################
 def get_zone_fg_pct(df, date=None, event=None):
@@ -303,7 +330,45 @@ def create_zone_ids_df(df):
     return zone_id_df
 zone_ids = create_zone_ids_df(sorted_df)
 
+def add_zone_to_zone_ids(zone_ids):
+    list_ = []
+    for index, row in zone_ids.iterrows():
+        list_.append(('_'.join([row.shot_zone_area,
+                                row.shot_zone_basic]).replace(' ','_').replace(')','').split('(')[1],
+                      row.zone_id))
+
+    zone_ids = zone_ids.merge(pd.DataFrame(list_, columns=['zone', 'zone_id']),on='zone_id')
+    return zone_ids
+zone_ids = add_zone_to_zone_ids(zone_ids)
+
+#add zone_id, zone to df
 sorted_df = sorted_df.merge(zone_ids, on=['shot_zone_basic', 'shot_zone_area'])
+
+#get player avg for each zone they are shooting in
+def get_zone_avg(df):
+    start = time.time()
+    df_slice = df[['name','zone']]
+    zone_avg = []
+
+    for index, row in df_slice.iterrows():
+        zone_slice= zone_fg_pct[zone_fg_pct.name==row[0]]
+        zone_avg.append(zone_slice[row[1]].sum())
+
+        if index % 25000==0:
+            print('Runtime: {} seconds. Iterations remaining: {}.'.format(round(time.time()-start,2), len(df_slice)-index))
+    return zone_avg
+zone_avgs = get_zone_avg(sorted_df)
+sorted_df['zone_avg']=zone_avgs
+
+#add league avg for each zone
+sorted_df = sorted_df.merge(sorted_df.groupby('zone').mean().zone_avg.reset_index().rename(columns={'zone_avg': 'lg_zone_avg'}), on='zone')
+#add fg% relative to lg avg for each zone
+sorted_df['zone_minus_lg_avg'] = sorted_df.zone_avg-sorted_df.lg_zone_avg
+
+sorted_df.to_csv('final_df_1415.csv')
+zone_fg_pct.to_csv('data/zone_fg_pct.csv')
+zone_ids.to_csv('data/zone_ids.csv')
+
 ######################################################################
 #rearrange columns for better visability
 # clean = sorted_df[['name','pos','age','player_id', 'team_name', 'team_id', 'game_date',
