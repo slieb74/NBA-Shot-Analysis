@@ -137,6 +137,7 @@ def freq_shooting_plot(player_name, gridNum=25):
     ax.text(135,395,get_season_stats(player_name)[1])
 
     plt.show()
+    shot_recommender(player_name)
 
 #################PLOT TEAM FREQUENCY SHOT CHART (MATPLOTLIB)#################
 def team_freq_plot(team, gridNum=25):
@@ -166,7 +167,7 @@ def team_freq_plot(team, gridNum=25):
     #draw circles
     for i, shots in enumerate(ShootingPctLocs2):
         restricted2 = Circle(shotNumber2.get_offsets()[i], radius=shotNumber2.get_array()[i],
-                            color=cmap(shots),alpha=1, fill=True)
+                            color=cmap(shots),alpha=.9, fill=True)
         if restricted2.radius > 240/gridNum: restricted2.radius=240/gridNum
         ax.add_patch(restricted2)
 
@@ -183,7 +184,7 @@ def team_freq_plot(team, gridNum=25):
     #draw circles
     for i, shots in enumerate(ShootingPctLocs3):
         restricted3 = Circle(shotNumber3.get_offsets()[i], radius=shotNumber3.get_array()[i],
-                            color=cmap3(shots),alpha=1, fill=True)
+                            color=cmap3(shots),alpha=.9, fill=True)
         if restricted3.radius > 240/gridNum: restricted3.radius=240/gridNum
         ax.add_patch(restricted3)
 
@@ -287,8 +288,8 @@ def shot_freq_heatmap(name):
     trace3 = go.Histogram2d(
         x=x,
         y=y,
-        zmax=40,
-        zmin=0,
+        zmax=z_max,
+        zmin=z_min,
     #     nbinsx=20,
     #     nbinsy=20,
         zsmooth='best',
@@ -319,23 +320,27 @@ def shot_freq_heatmap(name):
     plotly.offline.iplot(fig)
 
 ############################--PPS HEATMAP--#############################
-#FIX FUNCTION - CHANGE ZONE TO FEATURE
-def pps_heatmap(feature):
-    pps_tab=pd.crosstab(df.team_name, df[feature], values=df.pps, aggfunc='mean',margins=False).fillna(0)
+# def pps_heatmap(feature):
+#     pps_tab=pd.crosstab(df.team_name, df[feature], values=df.pps, aggfunc='mean',margins=False).fillna(0)
+#
+#     team_heatmap = go.Heatmap(z=[np.array((pps_tab[pps_tab.index==pps_tab.index[i]])) for i in range(len(pps_tab.index))],
+#                        x=pps_tab.columns, y= [team.split(' ')[-1] for team in pps_tab.index]
+#                       )
+#
+#     layout = go.Layout(
+#         title='Points Per Shot Heatmap',
+#         xaxis = dict(ticks='', nticks=len(pps_tab.columns), automargin=True),
+#         yaxis = dict(ticks='', nticks=len(pps_tab.index), automargin=True),
+#     )
+#
+#     fig = go.Figure(data=[team_heatmap], layout=layout)
+#     plotly.offline.iplot(fig, filename='pps-heatmap')
+def pps_heatmap_sns(feature):
+    pps_tab=pd.crosstab(df[feature], df.team_name, values=df.pps, aggfunc='mean',margins=False).fillna(0)
 
-    team_heatmap = go.Heatmap(z=[np.array((pps_tab[pps_tab.index==pps_tab.index[i]])) for i in range(len(pps_tab.index))],
-                       x=pps_tab.columns,
-                       y= [team.split(' ')[-1] for team in pps_tab.index]
-                      )
-
-    layout = go.Layout(
-        title='Points Per Shot Heatmap',
-        xaxis = dict(ticks='', nticks=len(pps_tab.columns), automargin=True),
-        yaxis = dict(ticks='', nticks=len(pps_tab.index), automargin=True),
-    )
-
-    fig = go.Figure(data=[team_heatmap], layout=layout)
-    plotly.offline.iplot(fig, filename='labelled-heatmap')
+    plt.figure(figsize=(15,6))
+    sns.heatmap(pps_tab, annot=False, robust=True)
+    plt.show()
 
 ########################--FREQUENCY BAR PLOT--########################
 def freq_bar_plots(feature, round_=False):
@@ -409,7 +414,7 @@ def freq_bar_plots(feature, round_=False):
     fig = go.Figure(data=data, layout=layout)
     plotly.offline.iplot(fig, filename='stacked-bar')
 
-########################--PERCENTAGE BAR CHART--########################
+#########################--PERCENTAGE BAR CHART--##########################
 def pct_bar_plots(feature, round_=False, player=None, team=None):
     if round_==True:
         df_ = df.copy()
@@ -484,3 +489,52 @@ def pct_bar_plots(feature, round_=False, player=None, team=None):
 
     fig = go.Figure(data=data, layout=layout)
     plotly.offline.iplot(fig, filename='stacked-bar')
+
+
+###########################--SHOT RECOMMENDER--###########################
+def player_pps(name):
+    player = df[df.name==name]
+    pps_tab=pd.crosstab(player.zone, player.name,
+                       values=player.pps, aggfunc='mean',
+                       margins=False).fillna(0).rename(
+                                columns={list(set(player.name))[0]:'pps'})
+
+    pps_freq = pd.concat([pps_tab,
+                          pd.DataFrame(
+                              player.zone.value_counts()).rename(
+                              columns={'zone':'count_'})],
+                              axis=1).sort_values(by='pps',
+                                                  ascending=False)
+
+    pps_freq['freq_pct'] = pps_freq.count_/pps_freq.count_.sum()
+
+    pps_freq=pps_freq.sort_values('freq_pct',ascending=False)
+
+    return pps_freq[pps_freq.freq_pct>=.05]
+
+def pps_zone_percentiles(name):
+    pps_per_zone = pd.crosstab(df.name, df.zone, df.pps, aggfunc='mean').fillna(0)
+    pps_percentiles = pps_per_zone.quantile(np.round(np.arange(.1,1,.2)*10)/10)
+    return pps_percentiles
+
+def shot_recommender(name):
+    pps = player_pps(name)
+    zone_percentiles = pps_zone_percentiles(name)
+
+    more_freq = []
+    less_freq = []
+
+    for i in pps.index:
+        if pps.loc[i].pps > zone_percentiles[i].loc[.7]:
+            more_freq.append(i)
+            #print(name +  ' should shoot in ' + i + ' more frequently')
+        elif pps.loc[i].pps < zone_percentiles[i].loc[.5]:
+            if i != 'C_Restricted_Area':
+                less_freq.append(i)
+            #print(name + ' should shoot in ' + i + ' less frequently')
+    if len(more_freq)>0:
+        print(name +  ' should shoot in the following zones more frequently:')
+        [print('  - ' + zone) for zone in more_freq]
+    if len(less_freq)>0:
+        print(name +  ' should shoot in the following zones less frequently:')
+        [print('  - ' + zone) for zone in less_freq]
