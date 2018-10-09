@@ -39,7 +39,7 @@ I made similar charts for each team, where you can get a strong sense of their s
 #### Frequency Shot Heatmap
 In order to get a better sense of where players and teams are shooting from, disregarding efficiency, I designed a heatmap to show the locations where they most frequently shoot from, complete with a dropdown that allows you to select any player or team.
 
-<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/shot_zones.png">
+<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/harden%20heatmap.png">
 
 #### FG Frequency Bar Plot
 To visualize how the league distributes its shots, I added an interactive bar plot to my dashboard that shows FG% and the number of shots for a given feature that can be selected from a dropdown.
@@ -80,7 +80,9 @@ Due to the inconsistency in scale of my numeric features (FG% is a decimal but s
 For the Neural Network, I used one hidden layer that contained 50 nodes, 'relu' activation due to the lack of negative values, and the 'adam' optimizer to obtain my best results.
 
 ###### ROC curves
-<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/all_roc_curves.png">
+<p align="center">
+  <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/all_roc_curves.png" height="500" width="600">
+</p>
 
 ###### Confusion Matrix Comparisons (left: Logistic Regression, center: Gradient Boosting, right: Neural Network)
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/cm%20logreg.png" height="250" width="270"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/gb%20cm.png" height="250" width="270"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/nn%20cm.png" height="250" width="270"/>
