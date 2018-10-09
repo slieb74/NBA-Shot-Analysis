@@ -83,19 +83,19 @@ For the Neural Network, I used one hidden layer that contained 50 nodes, 'relu' 
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/all_roc_curves.png">
 
 ###### Confusion Matrix Comparisons (left: Logistic Regression, center: Gradient Boosting, right: Neural Network)
-<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/cm%20logreg.png" height="250" width="250"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/gb%20cm.png" height="250" width="250"/> 
+<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/cm%20logreg.png" height="250" width="270"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/gb%20cm.png" height="250" width="270"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/nn%20cm.png" height="250" width="270"/>
 
 My best performing model depends on how a team values the bias/variance tradeoff and whether they would prefer to minimize false negatives (predicting a miss when its actually a make) or false positives (predicting a make when its in fact a miss). A more agressive team would prefer the Neural Network, which only recommended not to shoot when it was extremely confident the shot would miss, but often recommended the player should shoot, albeit with less than a 40% accuracy. An agressive team would be fine with this model because it limited false negatives and gave the team more chances to score.
 
 On the other hand, a more conservative team might prefer the Gradient Boosting model, which correctly classified makes with a much higher accuracy, yet only recommended a shot ~30% of the time. It would likely lead to a higher FG%, but limits the potential scoring opportunities by recommending a team take fewer shots. The Logistic Regression model is far more balanced, sacrificing a lower overall accuracy for better precision and recall.
-
-<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/model%20results.png">
+###### Model Results
+<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/model%20results.png" height="400" width="750">
 
 In addition to the my individual models, I built a stacked ensemble model that trained the XGBoost, Random Forest, and AdaBoost classifiers, and then trained a Gradient Boosting model on output. This would in theory give less biased predictions by weighing multiple models; however, its results were unfortunately worse than my single layer models, so I discarded it.
 
 ## Shot Recommender
 For each player, I built a recommender system that outputs certain zones where the player should shoot more or less frequently from. The concept is based on the player's PPS relative to the league average in each zone. A player who has a high expected PPS relative to the league average in a zone would be recommended to shoot there more frequently. Conversely, a player who shoots poorly in a zone would be recommended to shoot less. In the future, I want to tune this recommender by accounting for the player's frequency of shots in each zone, so that it does not recommend a player shoot more in a zone that already contains a high percentage of their total shots.
-
+###### Recommender Output
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/harden%20recs.png">
 
 ## Next Steps 
