@@ -65,11 +65,25 @@ I trained 6 different machine learning classification models to predict whether 
  - XGBoost
  - Neural Network
  
-For each model, I went through a cross validation process to help narrow down my feature set into only the most important ones that did not show signs of multicolinearity with other included features. Due to the inconsistentcy in scale of my numeric features (FG% is a decimal but shot distance is measured in feet), I used Scikit-Learn's MinMaxScaler to normalize and vectorize my data. My cross validation process included hyperparameter tuning for each of my models by running a grid search with Stratified Kfold splits to ensure that the class balance remained consistent across all splits. 
+For each model, I went through a cross validation process to help narrow down my feature set into only the most important ones that did not show signs of multicolinearity with other included features. I ultimately narrowed down my inital set of over 20 features to the following 6:
+ - Shot Distance
+ - Zone FG%
+ - Defensive Win Shares per 48 Minutes
+ - Defender Distance
+ - Touch Time
+ - Shot Clock Remaining
 
+###### Feature Importances (Gradient Boosting Classifier)
+<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/gb%20feats.png">
+
+Due to the inconsistentcy in scale of my numeric features (FG% is a decimal but shot distance is measured in feet), I used Scikit-Learn's MinMaxScaler to normalize and vectorize my data. My cross validation process included hyperparameter tuning for each of my models by running a grid search with Stratified Kfold splits to ensure that the class balance remained consistent across all splits. 
 For the Neural Network, I used one hidden layer that contained 50 nodes, 'relu' activation due to the lack of negative values, and the 'adam' optimizer to obtain my best results.
 
-ADD CM, ROC, FEAT IMPORTANCES
+###### ROC curves
+<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/all_roc_curves.png">
+
+###### Confusion Matrix Comparisons (left: Logistic Regression, center: Gradient Boosting, right: Neural Network)
+<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/cm%20logreg.png" height="250" width="250"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/gb%20cm.png" height="250" width="250"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/nn%20cm.png" height="250" width="250"/>
 
 My best performing model depends on how a team values the bias/variance tradeoff and whether they would prefer to minimize false negatives (predicting a miss when its actually a make) or false positives (predicting a make when its in fact a miss). A more agressive team would prefer the Neural Network, which only recommended not to shoot when it was extremely confident the shot would miss, but often recommended the player should shoot, albeit with less than a 40% accuracy. An agressive team would be fine with this model because it limited false negatives and gave the team more chances to score.
 
