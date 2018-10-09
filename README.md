@@ -1,26 +1,92 @@
-# NBA-Shot-Analysis
-Flatiron School Final Project
-
+# NBA Shot Analysis
 
 ## Goal
-Explore NBA shot data using Python and Machine Learning to determine who the best shooters in the NBA are and see if I can accurately predict shot outcomes.
+Build a classification model to predict whether and NBA shot will go in or not, and create visualizations to help general managers, coaches, and players optimize their strategy to increase shooting efficiency.
 
-## Process
- - ETL
-    - Sourced data from nba.com, basketball-reference.com, and nbasavant.com
-    - Using data from the 2014-15 NBA season, consisting of 200,000+ shots
-    - Feature engineering to add more context to each shot
- - Machine Learning Models
-    - Predicting shot outcomes (make or miss) using shallow learning models such as:
-      - Logistic Regression
-      - Random Forest Classifier
-      - Gradient Boosting Classifier
-      - Ada Boost Classifier
-      - XGBoost
- - Shot Visualizations
-    - Using a combination of Plotly and d3, create a variety of shot charts such as hexbins, heatmaps, and more.
-    - Do this for each individual player, team, and position grouping
 
-## Future Additions
- - Train a neural network to predict shooting percentage based on shot chart visualization
- - Cluster similarly skilled shooters and recommend an optimal shooting lineup that covers each shot zone
+## ETL
+I gathered my data from three sources:
+ - Shot location data scraped from stats.nba.com (see my blog post for more detail: https://towardsdatascience.com/using-python-pandas-and-plotly-to-generate-nba-shot-charts-e28f873a99cb)
+ - Player tracking data from nbasavant.com
+ - Defensive stats from basketball-reference.com
+ 
+Since the NBA stopped providing tracking data such as number of dribbles, and defender distance in the middle of the 2016 season, I focused my project on the 2014-15 season. I gathered data on over 200,000 shots, with features including, but not limited to:
+ - Shot distance, (x,y) coordinates, and shot zone
+ - Touch time and number of dribbles
+ - Name and distance of closest defender
+ - Game context stats such as shot clock remaining, period, game clock
+ - Shot type (jump shot, dunk, etc.)
+
+I wanted to add more context to each shot, so I added advanced defensive stats for each defender (Block %, Defensive Win Shares/48, Defensive Box Score Plus Minus) and team (Defensive Rating). 
+
+The data I gathered had two different zone breakdowns, one which detailed the directional area of the court (left, right or center) and the other which detailed a more precise location (paint, corner 3, etc.). I combined these into 15 zones, as seen below, and for every player I calculated their Field Goal % (FG%) in each zone so that my model would have a better understanding of the quality of the shot. 
+
+INSERT ZONE BREAKDOWN GRAPH
+
+I have never been a fan of the argument that momentum impacts basketball games, and have often argued against the concept of a "hot hand" which posits that a player is more likely to hit a shot if they have hit consectutive prior shots. In an attempt to disprove this hypothesis, I engineered new features that detailed whether the shooter has scored their previous 1, 2, and 3 shots. My models found that hitting prior shots did not have a significant impact on whether a player will score their next shot.
+
+## Visualizations
+I wanted to create a wide range of visualizations that would show the frequency and efficiency of player's and team's shots.
+
+#### Binned Shot Chart
+The first visualization I made is a binned shot chart that breaks the court down into equally sized hexes and groups nearby shots into bubbles, with the size determined by frequency and color by FG%. The color scale differed for two's and three's to account for the point value of each shot. I also added the player's image and some additional stats to the chart. In my dashboard, there is a dropdown where you can select any player, and there is also an option to change the bubble size depending on if you want to see a more precise or broad shot chart. 
+
+INSERT PLAYER SHOT CHART
+
+I made similar charts for each team, where you can get a strong sense of their shooting efficiency and frequency distribution.
+
+INSERT TEAM SHOT CHART
+
+
+#### Frequency Shot Heatmap
+In order to get a better sense of where players and teams are shooting from, disregarding efficiency, I designed a heatmap to show the locations where they most frequently shoot from, complete with a dropdown that allows you to select any player or team.
+
+INSERT PIC
+
+#### FG Frequency Bar Plot
+To visualize how the league distributes its shots, I added an interactive bar plot to my dashboard that shows FG% and number of shots for a given feature that can be selected from a dropdown.
+
+INSERT PIC
+
+#### FG Percentage Bar Plot
+To visualize FG% without focusing on frequency, I built an interactive bar plot that shows leaguewide FG% and number of shots for a range of features that can be selected from a drop down.
+
+INSERT PIC
+
+#### Team Points Per Shot Heatmap Matrix
+I wanted to compare how teams perform in different contexts, so created a heatmap matrix that helps visualize which teams under- and overperform in certain aspects. The color of each box is determined by the team's points per shot (PPS) provided the selected feature/context. This gives teams a better sense of where they need to improve and how they stack up among the rest of the league.
+
+INSERT PIC
+
+## Machine Learning Models
+I trained 6 different machine learning classification models to predict whether a given shot would go in. The models I used were the following:
+ - Logistic Regression
+ - Random Forest
+ - Gradient Boosting
+ - AdaBoost
+ - XGBoost
+ - Neural Network
+ 
+For each model, I went through a cross validation process to help narrow down my feature set into only the most important ones that did not show signs of multicolinearity with other included features. Due to the inconsistentcy in scale of my numeric features (FG% is a decimal but shot distance is measured in feet), I used Scikit-Learn's MinMaxScaler to normalize and vectorize my data. My cross validation process included hyperparameter tuning for each of my models by running a grid search with Stratified Kfold splits to ensure that the class balance remained consistent across all splits. 
+
+For the Neural Network, I used one hidden layer that contained 50 nodes, 'relu' activation due to the lack of negative values, and the 'adam' optimizer to obtain my best results.
+
+ADD CM, ROC, FEAT IMPORTANCES
+
+My best performing model depends on how a team values the bias/variance tradeoff and whether they would prefer to minimize false negatives (predicting a miss when its actually a make) or false positives (predicting a make when its in fact a miss). A more agressive team would prefer the Neural Network, which only recommended not to shoot when it was extremely confident the shot would miss, but often recommended the player should shoot, albeit with less than a 40% accuracy. An agressive team would be fine with this model because it limited false negatives and gave the team more chances to score.
+
+On the other hand, a more conservative team might prefer the Gradient Boosting model, which correctly classified makes with a much higher accuracy, yet only recommended a shot ~30% of the time. It would likely lead to a higher FG%, but limits the potential scoring opportunities by recommending a team take fewer shots. The Logistic Regression model is far more balanced, sacrificing a lower overall accuracy for better precision and recall.
+
+ADD RESULTS IMG
+
+In addition to the my individual models, I built a stacked ensemble model that trained the XGBoost, Random Forest, and AdaBoost classifiers, and then trained a Gradient Boosting model on output. This would in theory give less biased predictions by weighing multiple models; however, its results were unfortunately worse than my single layer models, so I discarded it.
+
+## Shot Recommender
+For each player, I built a recommender system that outputs certain zones where the player should shoot more or less frequently from. The concept is based on the player's PPS relative to the league average in each zone. A player who has a high expected PPS relative to the league average in a zone would be recommended to shoot there more frequently. Conversely, a player who shoots poorly in a zone would be recommended to shoot less. In the future, I want to tune this recommender by accounting for the player's frequency of shots in each zone, so that it does not recommend a player shoot more in a zone that already contains a high percentage of their total shots.
+
+## Next Steps 
+- Adjust the colorscale of binned plots to display effiency relative to the league average, either in terms of FG% or PPS
+- Tune the shot recommender to provide ideal shot distributions
+- Classify 2s and 3s differently in my models to see if certain models predict one shot type with higher accuracy than others
+- Cluster similarly skilled shooters and recommend an optimal shooting lineup that covers each shot zone
+- Host the project online using Dash and Flask instead of the Jupyter Notebook dashboard
