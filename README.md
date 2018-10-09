@@ -1,7 +1,7 @@
 # NBA Shot Analysis
 
 ## Goal
-Build a classification model to predict whether and NBA shot will go in or not, and create visualizations to help general managers, coaches, and players optimize their strategy to increase shooting efficiency.
+Build a classification model to predict whether and NBA shot will go in or not, and create visualizations to help general managers, coaches, and players identify shooting patterns, eliminate bad shots, and optimize their strategy to increase shooting efficiency.
 
 ## ETL
 I gathered my data from three sources:
