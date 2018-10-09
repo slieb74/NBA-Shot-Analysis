@@ -9,10 +9,10 @@ I gathered my data from three sources:
  - Player tracking data from nbasavant.com
  - Defensive stats from basketball-reference.com
  
-Since the NBA stopped providing tracking data such as number of dribbles, and defender distance in the middle of the 2016 season, I focused my project on the 2014-15 season. I gathered data on over 200,000 shots, with features including, but not limited to:
+Since the NBA stopped providing tracking data such as the number of dribbles, and defender distance in the middle of the 2016 season, I focused my project on the 2014-15 season. I gathered data on over 200,000 shots, with features including, but not limited to:
  - Shot distance, (x,y) coordinates, and shot zone
  - Touch time and number of dribbles
- - Name and distance of closest defender
+ - Name and distance of the closest defender
  - Game context stats such as shot clock remaining, period, game clock
  - Shot type (jump shot, dunk, etc.)
 
@@ -22,7 +22,7 @@ The data I gathered had two different zone breakdowns, one which detailed the di
 
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/shot_zones.png">
 
-I have never been a fan of the argument that momentum impacts basketball games, and have often argued against the concept of a "hot hand" which posits that a player is more likely to hit a shot if they have hit consectutive prior shots. In an attempt to disprove this hypothesis, I engineered new features that detailed whether the shooter has scored their previous 1, 2, and 3 shots. My models found that hitting prior shots did not have a significant impact on whether a player will score their next shot.
+I have never been a fan of the argument that momentum impacts basketball games, and have often argued against the concept of a "hot hand" which posits that a player is more likely to hit a shot if they have hit consecutive prior shots. In an attempt to disprove this hypothesis, I engineered new features that detailed whether the shooter has scored their previous 1, 2, and 3 shots. My models found that hitting prior shots did not have a significant impact on whether a player will score their next shot.
 
 ## Visualizations
 I wanted to create a wide range of visualizations that would show the frequency and efficiency of player's and team's shots.
@@ -42,12 +42,12 @@ In order to get a better sense of where players and teams are shooting from, dis
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/shot_zones.png">
 
 #### FG Frequency Bar Plot
-To visualize how the league distributes its shots, I added an interactive bar plot to my dashboard that shows FG% and number of shots for a given feature that can be selected from a dropdown.
+To visualize how the league distributes its shots, I added an interactive bar plot to my dashboard that shows FG% and the number of shots for a given feature that can be selected from a dropdown.
 
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/shot_dist.png">
 
 #### FG Percentage Bar Plot
-To visualize FG% without focusing on frequency, I built an interactive bar plot that shows leaguewide FG% and number of shots for a range of features that can be selected from a drop down.
+To visualize FG% without focusing on frequency, I built an interactive bar plot that shows leaguewide FG% and the number of shots for a range of features that can be selected from a dropdown.
 
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/fg%20by%20zone.png">
 
@@ -65,7 +65,7 @@ I trained 6 different machine learning classification models to predict whether 
  - XGBoost
  - Neural Network
  
-For each model, I went through a cross validation process to help narrow down my feature set into only the most important ones that did not show signs of multicolinearity with other included features. I ultimately narrowed down my inital set of over 20 features to the following 6:
+For each model, I went through a cross-validation process to help narrow down my feature set into only the most important ones that did not show signs of multicollinearity with other included features. I ultimately narrowed down my initial set of over 20 features to the following 6:
  - Shot Distance
  - Zone FG%
  - Defensive Win Shares per 48 Minutes
@@ -76,7 +76,7 @@ For each model, I went through a cross validation process to help narrow down my
 ###### Feature Importances (Gradient Boosting Classifier)
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/gb%20feats.png">
 
-Due to the inconsistentcy in scale of my numeric features (FG% is a decimal but shot distance is measured in feet), I used Scikit-Learn's MinMaxScaler to normalize and vectorize my data. My cross validation process included hyperparameter tuning for each of my models by running a grid search with Stratified Kfold splits to ensure that the class balance remained consistent across all splits. 
+Due to the inconsistency in scale of my numeric features (FG% is a decimal but shot distance is measured in feet), I used Scikit-Learn's MinMaxScaler to normalize and vectorize my data. My cross-validation process included hyperparameter tuning for each of my models by running a grid search with Stratified Kfold splits to ensure that the class balance remained consistent across all splits. 
 For the Neural Network, I used one hidden layer that contained 50 nodes, 'relu' activation due to the lack of negative values, and the 'adam' optimizer to obtain my best results.
 
 ###### ROC curves
@@ -85,13 +85,13 @@ For the Neural Network, I used one hidden layer that contained 50 nodes, 'relu' 
 ###### Confusion Matrix Comparisons (left: Logistic Regression, center: Gradient Boosting, right: Neural Network)
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/cm%20logreg.png" height="250" width="270"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/gb%20cm.png" height="250" width="270"/> <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/nn%20cm.png" height="250" width="270"/>
 
-My best performing model depends on how a team values the bias/variance tradeoff and whether they would prefer to minimize false negatives (predicting a miss when its actually a make) or false positives (predicting a make when its in fact a miss). A more agressive team would prefer the Neural Network, which only recommended not to shoot when it was extremely confident the shot would miss, but often recommended the player should shoot, albeit with less than a 40% accuracy. An agressive team would be fine with this model because it limited false negatives and gave the team more chances to score.
+My best performing model depends on how a team values the bias/variance tradeoff and whether they would prefer to minimize false negatives (predicting a miss when its actually a make) or false positives (predicting a make when its in fact a miss). A more aggressive team would prefer the Neural Network, which only recommended not to shoot when it was extremely confident the shot would miss, but often recommended the player should shoot, albeit with less than a 40% accuracy. An aggressive team would be fine with this model because it limited false negatives and gave the team more chances to score.
 
 On the other hand, a more conservative team might prefer the Gradient Boosting model, which correctly classified makes with a much higher accuracy, yet only recommended a shot ~30% of the time. It would likely lead to a higher FG%, but limits the potential scoring opportunities by recommending a team take fewer shots. The Logistic Regression model is far more balanced, sacrificing a lower overall accuracy for better precision and recall.
 ###### Model Results
-<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/model%20results.png" height="400" width="750">
+<img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/model%20results.png" height="300" width="750">
 
-In addition to the my individual models, I built a stacked ensemble model that trained the XGBoost, Random Forest, and AdaBoost classifiers, and then trained a Gradient Boosting model on output. This would in theory give less biased predictions by weighing multiple models; however, its results were unfortunately worse than my single layer models, so I discarded it.
+In addition to my individual models, I built a stacked ensemble model that trained the XGBoost, Random Forest, and AdaBoost classifiers, and then trained a Gradient Boosting model on output. This would, in theory, give less biased predictions by weighing multiple models; however, its results were unfortunately worse than my single layer models, so I discarded it.
 
 ## Shot Recommender
 For each player, I built a recommender system that outputs certain zones where the player should shoot more or less frequently from. The concept is based on the player's PPS relative to the league average in each zone. A player who has a high expected PPS relative to the league average in a zone would be recommended to shoot there more frequently. Conversely, a player who shoots poorly in a zone would be recommended to shoot less. In the future, I want to tune this recommender by accounting for the player's frequency of shots in each zone, so that it does not recommend a player shoot more in a zone that already contains a high percentage of their total shots.
@@ -99,7 +99,7 @@ For each player, I built a recommender system that outputs certain zones where t
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/harden%20recs.png">
 
 ## Next Steps 
-- Adjust the colorscale of binned plots to display effiency relative to the league average, either in terms of FG% or PPS
+- Adjust the color scale of binned plots to display efficiency relative to the league average, either in terms of FG% or PPS
 - Tune the shot recommender to provide ideal shot distributions
 - Classify 2s and 3s differently in my models to see if certain models predict one shot type with higher accuracy than others
 - Cluster similarly skilled shooters and recommend an optimal shooting lineup that covers each shot zone
