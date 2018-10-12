@@ -106,3 +106,7 @@ For each player, I built a recommender system that outputs certain zones where t
 - Classify 2s and 3s differently in my models to see if certain models predict one shot type with higher accuracy than others
 - Cluster similarly skilled shooters and recommend an optimal shooting lineup that covers each shot zone
 - Host the project online using Dash and Flask instead of the Jupyter Notebook dashboard
+
+## Credits
+* Kirk Goldsberry for inspiring me to work on this project
+* Savvas Tjortjoglou for his court dimensions 
