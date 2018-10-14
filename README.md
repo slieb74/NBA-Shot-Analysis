@@ -5,7 +5,7 @@ Build a classification model to predict whether and NBA shot will go in or not, 
 
 ## ETL
 I gathered my data from three sources:
- - Shot location data scraped from stats.nba.com (see my blog post for more detail: https://towardsdatascience.com/using-python-pandas-and-plotly-to-generate-nba-shot-charts-e28f873a99cb)
+ - Shot location data scraped from stats.nba.com (see my <a href="https://towardsdatascience.com/using-python-pandas-and-plotly-to-generate-nba-shot-charts-e28f873a99cb">blog post</a> for more detail)
  - Player tracking data from nbasavant.com
  - Defensive stats from basketball-reference.com
  
@@ -90,6 +90,7 @@ For the Neural Network, I used one hidden layer that contained 50 nodes, 'relu' 
 My best performing model depends on how a team values the bias/variance tradeoff and whether they would prefer to minimize false negatives (predicting a miss when its actually a make) or false positives (predicting a make when its in fact a miss). A more aggressive team would prefer the Neural Network, which only recommended not to shoot when it was extremely confident the shot would miss, but often recommended the player should shoot, albeit with less than a 40% accuracy. An aggressive team would be fine with this model because it limited false negatives and gave the team more chances to score.
 
 On the other hand, a more conservative team might prefer the Gradient Boosting model, which correctly classified makes with a much higher accuracy, yet only recommended a shot ~30% of the time. It would likely lead to a higher FG%, but limits the potential scoring opportunities by recommending a team take fewer shots. The Logistic Regression model is far more balanced, sacrificing a lower overall accuracy for better precision and recall.
+
 ###### Model Results
 <img src="https://github.com/slieb74/NBA-Shot-Analysis/blob/master/images/model%20results.png" height="300" width="750">
 
@@ -108,5 +109,5 @@ For each player, I built a recommender system that outputs certain zones where t
 - Host the project online using Dash and Flask instead of the Jupyter Notebook dashboard
 
 ## Credits
-* Kirk Goldsberry for inspiring me to work on this project
-* Savvas Tjortjoglou for his court dimensions 
+* <a href="https://grantland.com/contributors/kirk-goldsberry/">Kirk Goldsberry</a> for inspiring me to work on this project
+* <a href="http://savvastjortjoglou.com/nba-shot-sharts.html">Savvas Tjortjoglou</a> for his court dimensions 
