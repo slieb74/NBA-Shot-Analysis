@@ -6,8 +6,8 @@ Build a classification model to predict whether and NBA shot will go in or not, 
 ## ETL
 I gathered my data from three sources:
  - Shot location data scraped from stats.nba.com (see my <a href="https://towardsdatascience.com/using-python-pandas-and-plotly-to-generate-nba-shot-charts-e28f873a99cb">blog post</a> for more detail)
- - Player tracking data from nbasavant.com
- - Defensive stats from basketball-reference.com
+ - Player tracking data from <a href="nbasavant.com">nbasavant.com</a> 
+ - Defensive stats from <a href="basketball-reference.com">basketball-reference</a> 
  
 Since the NBA stopped providing tracking data such as the number of dribbles, and defender distance in the middle of the 2016 season, I focused my project on the 2014-15 season. I gathered data on over 200,000 shots, with features including, but not limited to:
  - Shot distance, (x,y) coordinates, and shot zone
